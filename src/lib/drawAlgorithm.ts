@@ -157,7 +157,18 @@ function solvePot(teams: Team[], groups: Group[], teamIdx: number, usedGroups: S
     const team = teams[teamIdx];
 
     // Try groups A-L (0-11)
-    for (let i = 0; i < groups.length; i++) {
+    // Optimization: Sort groups by "most constrained" first?
+    // Or shuffle groups to add randomness?
+    // Let's shuffle the order of groups we try, to ensure variety in simulation.
+    // BUT, we must ensure we try ALL groups.
+    const groupIndices = Array.from({ length: groups.length }, (_, i) => i);
+    // Shuffle indices for randomness
+    for (let i = groupIndices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [groupIndices[i], groupIndices[j]] = [groupIndices[j], groupIndices[i]];
+    }
+
+    for (const i of groupIndices) {
         if (usedGroups.has(i)) continue;
 
         const group = groups[i];
@@ -182,48 +193,67 @@ function solvePot(teams: Team[], groups: Group[], teamIdx: number, usedGroups: S
 }
 
 export function simulateDraw(): Group[] {
-    // Initialize empty groups
-    const groups: Group[] = GROUPS.map(name => ({ name, teams: [] }));
+    const MAX_ATTEMPTS = 100;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        try {
+            // Initialize empty groups
+            const groups: Group[] = GROUPS.map(name => ({ name, teams: [] }));
 
-    // Process pots 1 to 4
-    const pots = [1, 2, 3, 4] as const;
+            // Process pots 1 to 4
+            const pots = [1, 2, 3, 4] as const;
 
-    for (const potNum of pots) {
-        const potTeams = shuffle(POTS[potNum]);
+            for (const potNum of pots) {
+                let potTeams = shuffle(POTS[potNum]);
 
-        // For Pot 1, we can just assign 1-to-1 to A-L (since they are seeds)
-        // But let's use the generic solver to be safe and consistent.
-        // Actually Pot 1: Hosts are usually pre-assigned?
-        // "Pot 1: 3 host nations + 9 highest... Hosts usually A1, B1, C1 etc?"
-        // Prompt: "Pathway 1: Groups A, B, C... Semi-final bracket 1... Top-ranked Pot 1 teams... distributed".
-        // Usually Hosts take A1, and maybe others.
-        // Let's assume standard draw: Pot 1 teams are drawn and assigned A-L.
-        // Hosts might be pre-assigned to A, B, C?
-        // Prompt doesn't explicitly say "Hosts in A, B, C".
-        // But usually hosts are A1. With 3 hosts (CAN, MEX, USA), they might be A1, B1, C1?
-        // Let's just treat them as Pot 1 teams and let the random draw assign them, 
-        // UNLESS there's a specific rule.
-        // "Top-ranked Pot 1 teams (1st/2nd and 3rd/4th) distributed across different pathways".
-        // This implies some seeding logic for Pot 1 distribution.
-        // For this MVP simulator, I will just shuffle Pot 1 and assign A-L.
-        // The user can restart if they want specific hosts in specific groups.
-        // Or I can force Hosts to A, B, C if I knew which ones.
-        // Let's stick to random shuffle for Pot 1 for now.
+                if (potNum === 1) {
+                    // Special handling for Pot 1 (Hosts)
+                    // Mexico -> Group A (index 0)
+                    // Canada -> Group B (index 1)
+                    // USA -> Group D (index 3)
 
-        const success = assignPot(potTeams, groups);
-        if (!success) {
-            // If we get stuck (shouldn't happen for Pot 1, but maybe Pot 4),
-            // we might need to restart the WHOLE draw or backtrack previous pots.
-            // But usually, standard draw logic only backtracks within the current Pot 
-            // (or the computer ensures the current Pot is valid relative to previous).
-            // If `assignPot` fails, it means the previous pots created a state where the current pot cannot be placed.
-            // In a real draw, this is prevented by "computer assistance" during previous steps?
-            // Or we just retry the simulation.
-            // For this app, if it fails, we throw an error or return null and the UI can retry.
-            console.error(`Failed to assign Pot ${potNum}`);
-            throw new Error(`Deadlock detected in Pot ${potNum}. Please retry.`);
+                    const hosts = {
+                        mex: 0, // Group A
+                        can: 1, // Group B
+                        usa: 3  // Group D
+                    };
+
+                    // Assign hosts to their specific groups
+                    Object.entries(hosts).forEach(([teamId, groupIdx]) => {
+                        const team = potTeams.find(t => t.id === teamId);
+                        if (team) {
+                            groups[groupIdx].teams.push(team);
+                        }
+                    });
+
+                    // Filter out hosts from the pot
+                    const remainingPot1 = potTeams.filter(t => !Object.keys(hosts).includes(t.id));
+
+                    // Assign remaining Pot 1 teams to remaining empty groups
+                    // Groups A(0), B(1), D(3) are taken.
+                    // Empty: C(2), E(4) ... L(11)
+                    const emptyGroupIndices = [2, 4, 5, 6, 7, 8, 9, 10, 11];
+
+                    for (let i = 0; i < remainingPot1.length; i++) {
+                        const groupIdx = emptyGroupIndices[i];
+                        groups[groupIdx].teams.push(remainingPot1[i]);
+                    }
+
+                    continue; // Done with Pot 1
+                }
+
+                const success = assignPot(potTeams, groups);
+                if (!success) {
+                    throw new Error(`Deadlock detected in Pot ${potNum}`);
+                }
+            }
+
+            return groups; // Success!
+
+        } catch (e) {
+            // Retry
+            if (attempt === MAX_ATTEMPTS - 1) throw e;
         }
     }
 
-    return groups;
+    throw new Error('Failed to generate draw after max attempts');
 }
