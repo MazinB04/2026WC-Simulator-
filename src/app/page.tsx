@@ -1,65 +1,118 @@
-import Image from "next/image";
+'use client';
+
+import React, { useState } from 'react';
+import { simulateDraw } from '@/lib/drawAlgorithm';
+import { Group } from '@/lib/types';
+import { GroupCard } from '@/components/GroupCard';
+import Link from 'next/link';
+
+const INITIAL_GROUPS: Group[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'].map(name => ({
+  name,
+  teams: []
+}));
 
 export default function Home() {
+  const [groups, setGroups] = useState<Group[]>(INITIAL_GROUPS);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDraw = () => {
+    setIsDrawing(true);
+    setError(null);
+
+    setTimeout(() => {
+      try {
+        const result = simulateDraw();
+        setGroups(result);
+      } catch (e) {
+        console.error(e);
+        setError('Failed to generate a valid draw. Please try again.');
+      } finally {
+        setIsDrawing(false);
+      }
+    }, 600);
+  };
+
+  const handleReset = () => {
+    setGroups(INITIAL_GROUPS);
+    setError(null);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900">
+      {/* Hero Section */}
+      <div className="bg-slate-900 text-white py-12 px-4 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-red-500 to-blue-600"></div>
+        <div className="max-w-7xl mx-auto text-center relative z-10">
+          <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-4">
+            FIFA WORLD CUP <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-200">2026</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-xl text-slate-300 font-light tracking-wide uppercase mb-8">
+            Official Draw Simulator
           </p>
+
+          <div className="flex justify-center gap-6 flex-wrap">
+            <button
+              onClick={handleDraw}
+              disabled={isDrawing}
+              className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-4 px-10 rounded-full shadow-lg shadow-blue-900/50 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {isDrawing ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  SIMULATING...
+                </span>
+              ) : 'START DRAW'}
+            </button>
+            <button
+              onClick={handleReset}
+              disabled={isDrawing}
+              className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-bold py-4 px-10 rounded-full border border-white/20 transition-all active:scale-95"
+            >
+              RESET
+            </button>
+            <Link
+              href="/pots"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-10 rounded-full shadow-lg shadow-emerald-900/50 transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2"
+            >
+              VIEW POTS
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
+      </div>
+
+      <div className="max-w-[1600px] mx-auto p-4 md:p-8">
+        {error && (
+          <div className="max-w-2xl mx-auto bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-8 rounded shadow-sm flex items-center gap-3">
+            <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <p className="font-medium">{error}</p>
+          </div>
+        )}
+
+        <div className="mb-16">
+          <div className="flex items-center justify-between mb-6 border-b border-slate-200 pb-4">
+            <h2 className="text-3xl font-black text-slate-800 tracking-tight">GROUPS</h2>
+            <span className="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">12 Groups • 48 Teams</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {groups.map((group) => (
+              <GroupCard key={group.name} group={group} />
+            ))}
+          </div>
         </div>
-      </main>
-    </div>
+
+
+      </div>
+
+      <footer className="bg-slate-900 text-slate-400 py-8 text-center text-sm">
+        <p>© 2025 World Cup Simulator. Not affiliated with FIFA.</p>
+      </footer>
+    </main>
   );
 }
