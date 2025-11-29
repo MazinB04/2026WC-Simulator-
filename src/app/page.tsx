@@ -16,6 +16,8 @@ export default function Home() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [showToast, setShowToast] = useState(false);
+
   const handleDraw = () => {
     setIsDrawing(true);
     setError(null);
@@ -38,12 +40,45 @@ export default function Home() {
     setError(null);
   };
 
+  const handleShare = async () => {
+    if (groups[0].teams.length === 0) return;
+
+    const text = groups.map(g =>
+      `Group ${g.name}\n${g.teams.map(t => `${t.name} (${(t.iso2 || '??').toUpperCase()})`).join('\n')}`
+    ).join('\n\n');
+
+    const shareText = `🏆 FIFA World Cup 2026 Draw Simulation\n\n${text}\n\nSimulate yours at: https://2026wc-simulator.netlify.app`;
+
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900">
+    <main className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900 relative">
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed top-4 right-4 z-50 bg-slate-900 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-2 animate-fade-in-down">
+          <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+          <span className="font-bold">Draw copied to clipboard!</span>
+        </div>
+      )}
+
       {/* Hero Section */}
       <div className="bg-slate-900 text-white py-12 px-4 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-red-500 to-blue-600"></div>
         <div className="max-w-7xl mx-auto text-center relative z-10">
+          <div className="flex justify-center mb-6">
+            <img
+              src="/world_cup_2026_logo.png"
+              alt="FIFA World Cup 2026 Logo"
+              className="h-32 md:h-40 object-contain drop-shadow-2xl"
+            />
+          </div>
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-4">
             FIFA WORLD CUP <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-200">2026</span>
           </h1>
@@ -73,6 +108,13 @@ export default function Home() {
               className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-bold py-4 px-10 rounded-full border border-white/20 transition-all active:scale-95"
             >
               RESET
+            </button>
+            <button
+              onClick={handleShare}
+              className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 px-10 rounded-full shadow-lg shadow-purple-900/50 transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+              SHARE
             </button>
             <Link
               href="/pots"

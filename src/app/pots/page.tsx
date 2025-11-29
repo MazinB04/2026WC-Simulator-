@@ -9,6 +9,13 @@ export default function PotsPage() {
             <div className="bg-slate-900 text-white py-8 px-4 shadow-xl relative overflow-hidden mb-8">
                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-red-500 to-blue-600"></div>
                 <div className="max-w-7xl mx-auto text-center relative z-10">
+                    <div className="flex justify-center mb-6">
+                        <img
+                            src="/world_cup_2026_logo.png"
+                            alt="FIFA World Cup 2026 Logo"
+                            className="h-24 md:h-32 object-contain drop-shadow-2xl"
+                        />
+                    </div>
                     <h1 className="text-3xl md:text-5xl font-black tracking-tighter mb-4">
                         TOURNAMENT <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-200">POTS</span>
                     </h1>
